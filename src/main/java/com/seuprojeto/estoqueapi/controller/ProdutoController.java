@@ -2,6 +2,7 @@ package com.seuprojeto.estoqueapi.controller;
 
 import com.seuprojeto.estoqueapi.domain.Produto;
 import com.seuprojeto.estoqueapi.service.ProdutoService;
+import com.seuprojeto.estoqueapi.shared.DTO.ProdutoFiltroDTO;
 import com.seuprojeto.estoqueapi.shared.DTO.request.AtualizarProdutoRequest;
 import com.seuprojeto.estoqueapi.shared.DTO.response.AtualizarProdutoResponse;
 import jakarta.validation.Valid;
@@ -23,7 +24,7 @@ public class ProdutoController {
 
     @PostMapping("/criar")
     public ResponseEntity<Produto> criarAtividade(
-            @RequestBody Produto produto) {
+            @RequestBody @Valid Produto produto) {
         return new ResponseEntity<>(
                 service.cadastrar(produto), HttpStatus.CREATED
         );
@@ -51,34 +52,15 @@ public class ProdutoController {
     }
 
     @GetMapping("/pesquisar")
-    public ResponseEntity<List<Produto>> pesquisarProdutos(
-            @RequestParam(required = false) String descricao,
-            @RequestParam(required = false) Boolean completado,
-            @RequestParam(required = false) BigDecimal preco,
-            @RequestParam(required = false) BigDecimal precoMin,
-            @RequestParam(required = false) BigDecimal precoMax,
-            @RequestParam(required = false) Integer quantidade,
-            @RequestParam(required = false) Integer quantidadeMin,
-            @RequestParam(required = false) Integer quantidadeMax
-    ) {
-        List<Produto> produtos = service.pesquisar(
-                descricao,
-                completado,
-                preco,
-                precoMax,
-                precoMin,
-                quantidade,
-                quantidadeMin,
-                quantidadeMax
-        );
+    public ResponseEntity<List<Produto>> pesquisarProdutos(@Valid @ModelAttribute ProdutoFiltroDTO filtro) {
+        List<Produto> produtos = service.pesquisar(filtro);
         return ResponseEntity.ok(produtos);
     }
 
 
     @GetMapping("/{id}")
     public ResponseEntity<Produto> pesquisarPorId(@PathVariable UUID id) {
-        return service.pesquisarPorId(id)
-                .map(ResponseEntity::ok)
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+        Produto produto = service.pesquisarPorId(id);
+        return ResponseEntity.ok(produto);
     }
 }

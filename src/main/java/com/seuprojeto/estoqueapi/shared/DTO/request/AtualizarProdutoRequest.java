@@ -17,5 +17,6 @@ public class AtualizarProdutoRequest {
     @NotNull(message = "Preço é obrigatório")
     private BigDecimal preco;
 
+    @NotNull(message = "Status é obrigatório")
     private Boolean ativo;
 }
