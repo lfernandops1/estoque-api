@@ -14,6 +14,6 @@ public interface MovimentacaoService {
 
     List<MovimentacaoEstoque> listar();
 
-    Optional<MovimentacaoEstoque> buscarPorId(UUID id);
+    MovimentacaoEstoque buscarPorId(UUID id);
 
 }

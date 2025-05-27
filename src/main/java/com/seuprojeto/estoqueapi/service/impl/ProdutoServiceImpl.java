@@ -1,15 +1,17 @@
 package com.seuprojeto.estoqueapi.service.impl;
 
 import com.seuprojeto.estoqueapi.domain.Produto;
+import com.seuprojeto.estoqueapi.exception.produto.AtualizacaoInvalidaException;
+import com.seuprojeto.estoqueapi.exception.produto.ProdutoNaoEncontradoException;
 import com.seuprojeto.estoqueapi.repository.ProdutoRepository;
 import com.seuprojeto.estoqueapi.repository.specs.ProdutoSpecs;
 import com.seuprojeto.estoqueapi.service.ProdutoService;
+import com.seuprojeto.estoqueapi.shared.DTO.ProdutoFiltroDTO;
 import com.seuprojeto.estoqueapi.shared.DTO.request.AtualizarProdutoRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -26,19 +28,18 @@ public class ProdutoServiceImpl implements ProdutoService {
     public Produto cadastrar(Produto produto) {
         produto.setDataHoraCadastro(LocalDateTime.now());
         produto.setAtivo(true);
-        this.repository.save(produto);
-        return produto;
+        return repository.save(produto);
     }
 
     @Override
     public Produto atualizar(UUID id, AtualizarProdutoRequest produto) {
         Produto produtoEncontrado = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+                .orElseThrow(() -> new ProdutoNaoEncontradoException(id));
 
         if (produto.getDescricao() == null &&
                 produto.getAtivo() == null &&
                 produto.getPreco() == null) {
-            throw new RuntimeException("Nenhum campo válido fornecido para atualização");
+            throw new AtualizacaoInvalidaException("Nenhum campo válido fornecido para atualização");
         }
 
         Optional.ofNullable(produto.getDescricao()).ifPresent(produtoEncontrado::setDescricao);
@@ -57,28 +58,26 @@ public class ProdutoServiceImpl implements ProdutoService {
 
     public Produto remover(UUID id) {
         Produto produto = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+                .orElseThrow(() -> new ProdutoNaoEncontradoException(id));
 
         produto.setDataHoraRemocao(LocalDateTime.now());
 
         return repository.save(produto);
     }
 
-    public List<Produto> pesquisar(String descricao, Boolean ativo,
-                                   BigDecimal preco, BigDecimal precoMin, BigDecimal precoMax,
-                                   Integer quantidade, Integer quantidadeMin, Integer quantidadeMax) {
+    public List<Produto> pesquisar(ProdutoFiltroDTO filtro) {
         return repository.findAll(
                 Specification.where(ProdutoSpecs.naoExcluido())
-                        .and(ProdutoSpecs.descricaoContem(descricao))
-                        .and(ProdutoSpecs.ativo(ativo))
-                        .and(ProdutoSpecs.precoFiltrado(preco, precoMin, precoMax))
-                        .and(ProdutoSpecs.quantidadeFiltrada(quantidade, quantidadeMin, quantidadeMax))
+                        .and(ProdutoSpecs.descricaoContem(filtro.getDescricao()))
+                        .and(ProdutoSpecs.ativo(filtro.getAtivo()))
+                        .and(ProdutoSpecs.precoFiltrado(filtro.getPreco(), filtro.getPrecoMin(), filtro.getPrecoMax()))
+                        .and(ProdutoSpecs.quantidadeFiltrada(filtro.getQuantidade(), filtro.getQuantidadeMin(), filtro.getQuantidadeMax()))
         );
     }
 
-
-
-    public Optional<Produto> pesquisarPorId(UUID id) {
-        return repository.findByIdAndDataHoraRemocaoIsNull(id);
+    public Produto pesquisarPorId(UUID id) {
+        return repository.findByIdAndDataHoraRemocaoIsNull(id)
+                .orElseThrow(() -> new ProdutoNaoEncontradoException(id));
     }
+
 }

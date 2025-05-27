@@ -2,6 +2,11 @@ package com.seuprojeto.estoqueapi.service.impl;
 
 import com.seuprojeto.estoqueapi.domain.MovimentacaoEstoque;
 import com.seuprojeto.estoqueapi.domain.Produto;
+import com.seuprojeto.estoqueapi.exception.generico.ValidacaoException;
+import com.seuprojeto.estoqueapi.exception.movimentacao.MovimentacaoInvalidaException;
+import com.seuprojeto.estoqueapi.exception.movimentacao.MovimentacaoNaoEncontradaException;
+import com.seuprojeto.estoqueapi.exception.produto.ProdutoNaoEncontradoException;
+import com.seuprojeto.estoqueapi.exception.produto.QuantidadeInsuficienteException;
 import com.seuprojeto.estoqueapi.repository.MovimentacaoRepository;
 import com.seuprojeto.estoqueapi.repository.ProdutoRepository;
 import com.seuprojeto.estoqueapi.service.MovimentacaoService;
@@ -15,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -35,23 +39,25 @@ public class MovimentacaoServiceImpl implements MovimentacaoService {
     @Transactional
     public CriarMovimentacaoResponse criar(CriarMovimentacaoRequest criarMovimentacaoRequest) {
         Produto produto = produtoRepository.findById(criarMovimentacaoRequest.getProdutoId())
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+                .orElseThrow(() -> new ProdutoNaoEncontradoException(criarMovimentacaoRequest.getProdutoId()));
 
         Integer quantidade = criarMovimentacaoRequest.getQuantidade();
         if (quantidade == null || quantidade <= 0) {
-            throw new RuntimeException("Quantidade deve ser maior que zero");
+            throw new ValidacaoException("Quantidade deve ser maior que zero");
         }
 
         TipoMovimentacao tipo = criarMovimentacaoRequest.getTipo();
+        if (tipo == null || !(tipo == TipoMovimentacao.SAIDA || tipo == TipoMovimentacao.ENTRADA)) {
+            throw new MovimentacaoInvalidaException("Tipo de movimentação inválido");
+        }
+
         if (tipo == TipoMovimentacao.SAIDA) {
             if (produto.getQuantidade() < quantidade) {
-                throw new RuntimeException("Quantidade insuficiente no estoque");
+                throw new QuantidadeInsuficienteException(produto.getId());
             }
             produto.setQuantidade(produto.getQuantidade() - quantidade);
-        } else if (tipo == TipoMovimentacao.ENTRADA) {
-            produto.setQuantidade(produto.getQuantidade() + quantidade);
         } else {
-            throw new RuntimeException("Tipo de movimentação inválido");
+            produto.setQuantidade(produto.getQuantidade() + quantidade);
         }
 
         produtoRepository.save(produto);
@@ -66,16 +72,15 @@ public class MovimentacaoServiceImpl implements MovimentacaoService {
         return movimentacaoMapper.toResponse(salvo);
     }
 
-
     @Override
     public List<MovimentacaoEstoque> listar() {
         return movimentacaoRepository.findAll();
     }
 
     @Override
-    public Optional<MovimentacaoEstoque> buscarPorId(UUID id) {
-        return movimentacaoRepository.findById(id);
+    public MovimentacaoEstoque buscarPorId(UUID id) {
+        return movimentacaoRepository.findById(id)
+                .orElseThrow(() -> new MovimentacaoNaoEncontradaException(id));
     }
-
 
 }

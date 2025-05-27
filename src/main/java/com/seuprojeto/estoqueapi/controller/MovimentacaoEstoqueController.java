@@ -4,6 +4,7 @@ import com.seuprojeto.estoqueapi.domain.MovimentacaoEstoque;
 import com.seuprojeto.estoqueapi.service.MovimentacaoService;
 import com.seuprojeto.estoqueapi.shared.DTO.request.CriarMovimentacaoRequest;
 import com.seuprojeto.estoqueapi.shared.DTO.response.CriarMovimentacaoResponse;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,7 @@ public class MovimentacaoEstoqueController {
 
     @PostMapping("/criar")
     public ResponseEntity<CriarMovimentacaoResponse> criarMovimentacao(
-            @RequestBody CriarMovimentacaoRequest movimentacao) {
+            @RequestBody @Valid CriarMovimentacaoRequest movimentacao) {
         CriarMovimentacaoResponse response = service.criar(movimentacao);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -36,11 +37,9 @@ public class MovimentacaoEstoqueController {
 
     @GetMapping("/{id}")
     public ResponseEntity<MovimentacaoEstoque> buscarPorId(@PathVariable UUID id) {
-        return service.buscarPorId(id)
-                .map(ResponseEntity::ok)
-                .orElseThrow(() -> new RuntimeException("Movimentação não encontrada"));
+        MovimentacaoEstoque movimentacao = service.buscarPorId(id);
+        return ResponseEntity.ok(movimentacao);
     }
-
 
 }
 
