@@ -14,73 +14,71 @@ import com.seuprojeto.estoqueapi.shared.DTO.mapper.MovimentacaoMapper;
 import com.seuprojeto.estoqueapi.shared.DTO.request.CriarMovimentacaoRequest;
 import com.seuprojeto.estoqueapi.shared.DTO.response.CriarMovimentacaoResponse;
 import com.seuprojeto.estoqueapi.shared.enums.TipoMovimentacao;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
 @Service
 public class MovimentacaoServiceImpl implements MovimentacaoService {
 
-    @Autowired
-    private MovimentacaoRepository movimentacaoRepository;
+  @Autowired private MovimentacaoRepository movimentacaoRepository;
 
-    @Autowired
-    private ProdutoRepository produtoRepository;
+  @Autowired private ProdutoRepository produtoRepository;
 
-    @Autowired
-    private MovimentacaoMapper movimentacaoMapper;
+  @Autowired private MovimentacaoMapper movimentacaoMapper;
 
+  @Override
+  @Transactional
+  public CriarMovimentacaoResponse criar(CriarMovimentacaoRequest criarMovimentacaoRequest) {
+    Produto produto =
+        produtoRepository
+            .findById(criarMovimentacaoRequest.getProdutoId())
+            .orElseThrow(
+                () -> new ProdutoNaoEncontradoException(criarMovimentacaoRequest.getProdutoId()));
 
-    @Override
-    @Transactional
-    public CriarMovimentacaoResponse criar(CriarMovimentacaoRequest criarMovimentacaoRequest) {
-        Produto produto = produtoRepository.findById(criarMovimentacaoRequest.getProdutoId())
-                .orElseThrow(() -> new ProdutoNaoEncontradoException(criarMovimentacaoRequest.getProdutoId()));
-
-        Integer quantidade = criarMovimentacaoRequest.getQuantidade();
-        if (quantidade == null || quantidade <= 0) {
-            throw new ValidacaoException("Quantidade deve ser maior que zero");
-        }
-
-        TipoMovimentacao tipo = criarMovimentacaoRequest.getTipo();
-        if (tipo == null || !(tipo == TipoMovimentacao.SAIDA || tipo == TipoMovimentacao.ENTRADA)) {
-            throw new MovimentacaoInvalidaException("Tipo de movimentação inválido");
-        }
-
-        if (tipo == TipoMovimentacao.SAIDA) {
-            if (produto.getQuantidade() < quantidade) {
-                throw new QuantidadeInsuficienteException(produto.getId());
-            }
-            produto.setQuantidade(produto.getQuantidade() - quantidade);
-        } else {
-            produto.setQuantidade(produto.getQuantidade() + quantidade);
-        }
-
-        produtoRepository.save(produto);
-
-        MovimentacaoEstoque movimentacao = new MovimentacaoEstoque();
-        movimentacao.setProduto(produto);
-        movimentacao.setTipo(tipo);
-        movimentacao.setQuantidade(quantidade);
-        movimentacao.setDataMovimentacao(LocalDateTime.now());
-
-        MovimentacaoEstoque salvo = movimentacaoRepository.save(movimentacao);
-        return movimentacaoMapper.toResponse(salvo);
+    Integer quantidade = criarMovimentacaoRequest.getQuantidade();
+    if (quantidade == null || quantidade <= 0) {
+      throw new ValidacaoException("Quantidade deve ser maior que zero");
     }
 
-    @Override
-    public List<MovimentacaoEstoque> listar() {
-        return movimentacaoRepository.findAll();
+    TipoMovimentacao tipo = criarMovimentacaoRequest.getTipo();
+    if (tipo == null || !(tipo == TipoMovimentacao.SAIDA || tipo == TipoMovimentacao.ENTRADA)) {
+      throw new MovimentacaoInvalidaException("Tipo de movimentação inválido");
     }
 
-    @Override
-    public MovimentacaoEstoque buscarPorId(UUID id) {
-        return movimentacaoRepository.findById(id)
-                .orElseThrow(() -> new MovimentacaoNaoEncontradaException(id));
+    if (tipo == TipoMovimentacao.SAIDA) {
+      if (produto.getQuantidade() < quantidade) {
+        throw new QuantidadeInsuficienteException(produto.getId());
+      }
+      produto.setQuantidade(produto.getQuantidade() - quantidade);
+    } else {
+      produto.setQuantidade(produto.getQuantidade() + quantidade);
     }
 
+    produtoRepository.save(produto);
+
+    MovimentacaoEstoque movimentacao = new MovimentacaoEstoque();
+    movimentacao.setProduto(produto);
+    movimentacao.setTipo(tipo);
+    movimentacao.setQuantidade(quantidade);
+    movimentacao.setDataMovimentacao(LocalDateTime.now());
+
+    MovimentacaoEstoque salvo = movimentacaoRepository.save(movimentacao);
+    return movimentacaoMapper.toResponse(salvo);
+  }
+
+  @Override
+  public List<MovimentacaoEstoque> listar() {
+    return movimentacaoRepository.findAll();
+  }
+
+  @Override
+  public MovimentacaoEstoque buscarPorId(UUID id) {
+    return movimentacaoRepository
+        .findById(id)
+        .orElseThrow(() -> new MovimentacaoNaoEncontradaException(id));
+  }
 }
