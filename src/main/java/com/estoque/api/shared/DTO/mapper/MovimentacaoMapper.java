@@ -23,7 +23,6 @@ public interface MovimentacaoMapper {
   CriarMovimentacaoResponse toResponse(MovimentacaoEstoque entity);
 
   default Integer mapQuantidadeAtual(MovimentacaoEstoque entity) {
-    // retorna a quantidade atual do produto, não da movimentação
     return entity.getProduto().getQuantidade();
   }
 

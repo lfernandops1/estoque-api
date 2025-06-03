@@ -13,7 +13,6 @@ public interface ProdutoMapper {
   @Mapping(target = "dataMovimentacao", expression = "java(java.time.LocalDateTime.now())")
   @Mapping(target = "produto", source = "produto")
   @Mapping(target = "quantidade", source = "dto.quantidade")
-  // explicitando origem do campo quantidade
   MovimentacaoEstoque toEntity(CriarMovimentacaoRequest dto, Produto produto);
 
   @Mapping(source = "produto.id", target = "produtoId")

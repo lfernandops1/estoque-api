@@ -1,0 +1,186 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > ProdutoMapperImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.seuprojeto.estoqueapi.shared.DTO.mapper</a>
+</div>
+
+<h1>Coverage Summary for Class: ProdutoMapperImpl (com.seuprojeto.estoqueapi.shared.DTO.mapper)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">ProdutoMapperImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/16)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/29)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.seuprojeto.estoqueapi.shared.DTO.mapper;
+&nbsp;
+&nbsp;import domain.com.estoque.api.MovimentacaoEstoque;
+&nbsp;import domain.com.estoque.api.Produto;
+&nbsp;import request.DTO.shared.com.estoque.api.CriarMovimentacaoRequest;
+&nbsp;import response.DTO.shared.com.estoque.api.CriarMovimentacaoResponse;
+&nbsp;import java.util.UUID;
+&nbsp;import javax.annotation.processing.Generated;
+&nbsp;import org.springframework.stereotype.Component;
+&nbsp;
+&nbsp;@Generated(
+&nbsp;    value = &quot;org.mapstruct.ap.MappingProcessor&quot;,
+&nbsp;    date = &quot;2025-05-28T19:45:45-0300&quot;,
+&nbsp;    comments = &quot;version: 1.5.5.Final, compiler: IncrementalProcessingEnvironment from gradle-language-java-8.13.jar, environment: Java 17.0.12 (Oracle Corporation)&quot;
+&nbsp;)
+&nbsp;@Component
+<b class="nc">&nbsp;public class ProdutoMapperImpl implements ProdutoMapper {</b>
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public MovimentacaoEstoque toEntity(CriarMovimentacaoRequest dto, Produto produto) {
+<b class="nc">&nbsp;        if ( dto == null &amp;&amp; produto == null ) {</b>
+<b class="nc">&nbsp;            return null;</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        MovimentacaoEstoque movimentacaoEstoque = new MovimentacaoEstoque();</b>
+&nbsp;
+<b class="nc">&nbsp;        if ( dto != null ) {</b>
+<b class="nc">&nbsp;            movimentacaoEstoque.setQuantidade( dto.getQuantidade() );</b>
+<b class="nc">&nbsp;            movimentacaoEstoque.setTipo( dto.getTipo() );</b>
+&nbsp;        }
+<b class="nc">&nbsp;        if ( produto != null ) {</b>
+<b class="nc">&nbsp;            movimentacaoEstoque.setProduto( produto );</b>
+<b class="nc">&nbsp;            movimentacaoEstoque.setId( produto.getId() );</b>
+&nbsp;        }
+<b class="nc">&nbsp;        movimentacaoEstoque.setDataMovimentacao( java.time.LocalDateTime.now() );</b>
+&nbsp;
+<b class="nc">&nbsp;        return movimentacaoEstoque;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public CriarMovimentacaoResponse toResponse(MovimentacaoEstoque entity) {
+<b class="nc">&nbsp;        if ( entity == null ) {</b>
+<b class="nc">&nbsp;            return null;</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        CriarMovimentacaoResponse criarMovimentacaoResponse = new CriarMovimentacaoResponse();</b>
+&nbsp;
+<b class="nc">&nbsp;        criarMovimentacaoResponse.setProdutoId( entityProdutoId( entity ) );</b>
+<b class="nc">&nbsp;        criarMovimentacaoResponse.setTipo( entity.getTipo() );</b>
+<b class="nc">&nbsp;        criarMovimentacaoResponse.setQuantidade( entity.getQuantidade() );</b>
+<b class="nc">&nbsp;        criarMovimentacaoResponse.setDataMovimentacao( entity.getDataMovimentacao() );</b>
+&nbsp;
+<b class="nc">&nbsp;        return criarMovimentacaoResponse;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private UUID entityProdutoId(MovimentacaoEstoque movimentacaoEstoque) {
+<b class="nc">&nbsp;        if ( movimentacaoEstoque == null ) {</b>
+<b class="nc">&nbsp;            return null;</b>
+&nbsp;        }
+<b class="nc">&nbsp;        Produto produto = movimentacaoEstoque.getProduto();</b>
+<b class="nc">&nbsp;        if ( produto == null ) {</b>
+<b class="nc">&nbsp;            return null;</b>
+&nbsp;        }
+<b class="nc">&nbsp;        UUID id = produto.getId();</b>
+<b class="nc">&nbsp;        if ( id == null ) {</b>
+<b class="nc">&nbsp;            return null;</b>
+&nbsp;        }
+<b class="nc">&nbsp;        return id;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-05-28 20:13</div>
+</div>
+</body>
+</html>

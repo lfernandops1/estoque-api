@@ -1,0 +1,210 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > ProdutoSpecs</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.seuprojeto.estoqueapi.repository.specs</a>
+</div>
+
+<h1>Coverage Summary for Class: ProdutoSpecs (com.seuprojeto.estoqueapi.repository.specs)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">ProdutoSpecs</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    29,4%
+  </span>
+  <span class="absValue">
+    (5/17)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    15,8%
+  </span>
+  <span class="absValue">
+    (6/38)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    23,4%
+  </span>
+  <span class="absValue">
+    (11/47)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.seuprojeto.estoqueapi.repository.specs;
+&nbsp;
+&nbsp;import domain.com.estoque.api.Produto;
+&nbsp;import org.springframework.data.jpa.domain.Specification;
+&nbsp;
+&nbsp;import java.math.BigDecimal;
+&nbsp;
+<b class="nc">&nbsp;public class ProdutoSpecs {</b>
+&nbsp;
+&nbsp;    public static Specification&lt;Produto&gt; descricaoContem(String descricao) {
+<b class="fc">&nbsp;        return (root, query, builder) -&gt;</b>
+<b class="nc">&nbsp;                descricao == null || descricao.isBlank() ?</b>
+<b class="nc">&nbsp;                        builder.conjunction() :</b>
+<b class="nc">&nbsp;                        builder.like(builder.lower(root.get(&quot;descricao&quot;)), &quot;%&quot; + descricao.toLowerCase() + &quot;%&quot;);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public static Specification&lt;Produto&gt; precoExato(BigDecimal preco) {
+<b class="nc">&nbsp;        return (root, query, builder) -&gt;</b>
+<b class="nc">&nbsp;                preco == null ?</b>
+<b class="nc">&nbsp;                        builder.conjunction() :</b>
+<b class="nc">&nbsp;                        builder.equal(root.get(&quot;preco&quot;), preco.stripTrailingZeros());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public static Specification&lt;Produto&gt; precoEntre(BigDecimal precoMin, BigDecimal precoMax) {
+<b class="nc">&nbsp;        return (root, query, builder) -&gt; {</b>
+<b class="nc">&nbsp;            if (precoMin != null &amp;&amp; precoMax != null) {</b>
+<b class="nc">&nbsp;                return builder.between(root.get(&quot;preco&quot;), precoMin, precoMax);</b>
+<b class="nc">&nbsp;            } else if (precoMin != null) {</b>
+<b class="nc">&nbsp;                return builder.greaterThanOrEqualTo(root.get(&quot;preco&quot;), precoMin);</b>
+<b class="nc">&nbsp;            } else if (precoMax != null) {</b>
+<b class="nc">&nbsp;                return builder.lessThanOrEqualTo(root.get(&quot;preco&quot;), precoMax);</b>
+&nbsp;            } else {
+<b class="nc">&nbsp;                return builder.conjunction();</b>
+&nbsp;            }
+&nbsp;        };
+&nbsp;    }
+&nbsp;
+&nbsp;    public static Specification&lt;Produto&gt; ativo(Boolean ativo) {
+<b class="fc">&nbsp;        return (root, query, builder) -&gt;</b>
+<b class="nc">&nbsp;                ativo == null ?</b>
+<b class="nc">&nbsp;                        builder.conjunction() :</b>
+<b class="nc">&nbsp;                        builder.equal(root.get(&quot;ativo&quot;), ativo);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public static Specification&lt;Produto&gt; naoExcluido() {
+<b class="fc">&nbsp;        return (root, query, builder) -&gt;</b>
+<b class="nc">&nbsp;                builder.isNull(root.get(&quot;dataHoraRemocao&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public static Specification&lt;Produto&gt; quantidadeExata(Integer quantidade) {
+<b class="nc">&nbsp;        return (root, query, builder) -&gt;</b>
+<b class="nc">&nbsp;                quantidade == null ?</b>
+<b class="nc">&nbsp;                        builder.conjunction() :</b>
+<b class="nc">&nbsp;                        builder.equal(root.get(&quot;quantidade&quot;), quantidade);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public static Specification&lt;Produto&gt; quantidadeEntre(Integer quantidadeMin, Integer quantidadeMax) {
+<b class="nc">&nbsp;        return (root, query, builder) -&gt; {</b>
+<b class="nc">&nbsp;            if (quantidadeMin != null &amp;&amp; quantidadeMax != null) {</b>
+<b class="nc">&nbsp;                return builder.between(root.get(&quot;quantidade&quot;), quantidadeMin, quantidadeMax);</b>
+<b class="nc">&nbsp;            } else if (quantidadeMin != null) {</b>
+<b class="nc">&nbsp;                return builder.greaterThanOrEqualTo(root.get(&quot;quantidade&quot;), quantidadeMin);</b>
+<b class="nc">&nbsp;            } else if (quantidadeMax != null) {</b>
+<b class="nc">&nbsp;                return builder.lessThanOrEqualTo(root.get(&quot;quantidade&quot;), quantidadeMax);</b>
+&nbsp;            } else {
+<b class="nc">&nbsp;                return builder.conjunction();</b>
+&nbsp;            }
+&nbsp;        };
+&nbsp;    }
+&nbsp;
+&nbsp;    public static Specification&lt;Produto&gt; quantidadeFiltrada(Integer quantidade, Integer quantidadeMin, Integer quantidadeMax) {
+<b class="fc">&nbsp;        Specification&lt;Produto&gt; spec = Specification.where(naoExcluido());</b>
+&nbsp;
+<b class="pc">&nbsp;        if (quantidade != null) {</b>
+<b class="nc">&nbsp;            spec = spec.and(quantidadeExata(quantidade));</b>
+<b class="pc">&nbsp;        } else if (quantidadeMin != null || quantidadeMax != null) {</b>
+<b class="nc">&nbsp;            spec = spec.and(quantidadeEntre(quantidadeMin, quantidadeMax));</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        return spec;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public static Specification&lt;Produto&gt; precoFiltrado(BigDecimal preco, BigDecimal precoMin, BigDecimal precoMax) {
+<b class="fc">&nbsp;        Specification&lt;Produto&gt; spec = Specification.where(naoExcluido());</b>
+&nbsp;
+<b class="pc">&nbsp;        if (preco != null) {</b>
+<b class="nc">&nbsp;            spec = spec.and(precoExato(preco));</b>
+<b class="pc">&nbsp;        } else if (precoMin != null || precoMax != null) {</b>
+<b class="nc">&nbsp;            spec = spec.and(precoEntre(precoMin, precoMax));</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        return spec;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-05-28 20:13</div>
+</div>
+</body>
+</html>
