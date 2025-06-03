@@ -1,0 +1,230 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > GlobalExceptionHandler</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.seuprojeto.estoqueapi.handler</a>
+</div>
+
+<h1>Coverage Summary for Class: GlobalExceptionHandler (com.seuprojeto.estoqueapi.handler)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">GlobalExceptionHandler</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/32)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.seuprojeto.estoqueapi.handler;
+&nbsp;
+&nbsp;import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+&nbsp;import generico.exception.com.estoque.api.ErroDeIntegridadeException;
+&nbsp;import generico.exception.com.estoque.api.OperacaoNaoPermitidaException;
+&nbsp;import generico.exception.com.estoque.api.ValidacaoException;
+&nbsp;import movimentacao.exception.com.estoque.api.MovimentacaoInvalidaException;
+&nbsp;import produto.exception.com.estoque.api.ProdutoNaoEncontradoException;
+&nbsp;import produto.exception.com.estoque.api.QuantidadeInsuficienteException;
+&nbsp;import jakarta.persistence.EntityNotFoundException;
+&nbsp;import jakarta.validation.ConstraintViolationException;
+&nbsp;import org.springframework.http.HttpStatus;
+&nbsp;import org.springframework.http.ResponseEntity;
+&nbsp;import org.springframework.http.converter.HttpMessageNotReadableException;
+&nbsp;import org.springframework.web.bind.MethodArgumentNotValidException;
+&nbsp;import org.springframework.web.bind.annotation.ExceptionHandler;
+&nbsp;import org.springframework.web.bind.annotation.RestControllerAdvice;
+&nbsp;
+&nbsp;import java.util.Arrays;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.Map;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+&nbsp;@RestControllerAdvice
+<b class="nc">&nbsp;public class GlobalExceptionHandler {</b>
+&nbsp;
+&nbsp;    @ExceptionHandler(HttpMessageNotReadableException.class)
+&nbsp;    public ResponseEntity&lt;String&gt; handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+<b class="nc">&nbsp;        if (ex.getCause() instanceof InvalidFormatException invalidFormat &amp;&amp; invalidFormat.getTargetType().isEnum()) {</b>
+<b class="nc">&nbsp;            String field = invalidFormat.getPath().get(0).getFieldName();</b>
+<b class="nc">&nbsp;            String enumValues = Arrays.stream(invalidFormat.getTargetType().getEnumConstants())</b>
+<b class="nc">&nbsp;                    .map(Object::toString)</b>
+<b class="nc">&nbsp;                    .collect(Collectors.joining(&quot;, &quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;            String msg = String.format(&quot;Valor inválido para o campo &#39;%s&#39;. Valores válidos: [%s]&quot;, field, enumValues);</b>
+<b class="nc">&nbsp;            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(&quot;Erro de leitura do corpo da requisição.&quot;);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @ExceptionHandler(MovimentacaoInvalidaException.class)
+&nbsp;    public ResponseEntity&lt;String&gt; handleMovimentacaoInvalida(MovimentacaoInvalidaException ex) {
+<b class="nc">&nbsp;        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @ExceptionHandler(OperacaoNaoPermitidaException.class)
+&nbsp;    public ResponseEntity&lt;String&gt; handleOperacaoNaoPermitida(OperacaoNaoPermitidaException ex) {
+<b class="nc">&nbsp;        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @ExceptionHandler(ErroDeIntegridadeException.class)
+&nbsp;    public ResponseEntity&lt;String&gt; handleErroDeIntegridade(ErroDeIntegridadeException ex) {
+<b class="nc">&nbsp;        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @ExceptionHandler(ValidacaoException.class)
+&nbsp;    public ResponseEntity&lt;String&gt; handleValidacao(ValidacaoException ex) {
+<b class="nc">&nbsp;        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @ExceptionHandler(ProdutoNaoEncontradoException.class)
+&nbsp;    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleProdutoNaoEncontrado(ProdutoNaoEncontradoException ex) {
+<b class="nc">&nbsp;        Map&lt;String, String&gt; response = new HashMap&lt;&gt;();</b>
+<b class="nc">&nbsp;        response.put(&quot;erro&quot;, ex.getMessage());</b>
+<b class="nc">&nbsp;        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @ExceptionHandler(QuantidadeInsuficienteException.class)
+&nbsp;    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleQuantidadeInsuficienteException(QuantidadeInsuficienteException ex) {
+<b class="nc">&nbsp;        Map&lt;String, String&gt; erro = Map.of(&quot;erro&quot;, ex.getMessage());</b>
+<b class="nc">&nbsp;        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // Erros de validação com @Valid
+&nbsp;    @ExceptionHandler(MethodArgumentNotValidException.class)
+&nbsp;    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleValidationExceptions(MethodArgumentNotValidException ex) {
+<b class="nc">&nbsp;        Map&lt;String, String&gt; errors = new HashMap&lt;&gt;();</b>
+&nbsp;
+<b class="nc">&nbsp;        ex.getBindingResult().getFieldErrors().forEach(error -&gt; {</b>
+<b class="nc">&nbsp;            errors.put(error.getField(), error.getDefaultMessage());</b>
+&nbsp;        });
+&nbsp;
+<b class="nc">&nbsp;        return ResponseEntity.badRequest().body(errors);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // Erros de argumentos inválidos no path ou query
+&nbsp;    @ExceptionHandler(ConstraintViolationException.class)
+&nbsp;    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleConstraintViolation(ConstraintViolationException ex) {
+<b class="nc">&nbsp;        Map&lt;String, String&gt; errors = new HashMap&lt;&gt;();</b>
+&nbsp;
+<b class="nc">&nbsp;        ex.getConstraintViolations().forEach(violation -&gt; {</b>
+<b class="nc">&nbsp;            String field = violation.getPropertyPath().toString();</b>
+<b class="nc">&nbsp;            errors.put(field, violation.getMessage());</b>
+&nbsp;        });
+&nbsp;
+<b class="nc">&nbsp;        return ResponseEntity.badRequest().body(errors);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // Recurso não encontrado
+&nbsp;    @ExceptionHandler(EntityNotFoundException.class)
+&nbsp;    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleEntityNotFound(EntityNotFoundException ex) {
+<b class="nc">&nbsp;        Map&lt;String, String&gt; response = Map.of(&quot;erro&quot;, ex.getMessage());</b>
+<b class="nc">&nbsp;        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // Fallback para qualquer outro erro
+&nbsp;    @ExceptionHandler(Exception.class)
+&nbsp;    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleGenericException(Exception ex) {
+<b class="nc">&nbsp;        Map&lt;String, String&gt; response = Map.of(&quot;erro&quot;, &quot;Erro interno no servidor&quot;);</b>
+<b class="nc">&nbsp;        ex.printStackTrace(); // para log</b>
+<b class="nc">&nbsp;        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-05-28 20:13</div>
+</div>
+</body>
+</html>
