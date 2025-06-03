@@ -14,11 +14,13 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.annotation.DirtiesContext;
 
 @Transactional
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ComponentScan(basePackages = {"com.estoque.api.repository.ProdutoRepository"})
 public class ProdutoRepositoryTest extends BaseTest {
 
   @Autowired private ProdutoRepository produtoRepository;
