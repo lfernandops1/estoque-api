@@ -19,13 +19,17 @@ repositories {
 }
 
 dependencies {
-    // Spring Boot starters
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-    // PostgreSQL
-    runtimeOnly 'org.postgresql:postgresql:42.6.0'
+    // Banco de Dados
+    runtimeOnly 'org.postgresql:postgresql:42.7.2'
+
+    // Utilitários
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
@@ -35,23 +39,43 @@ dependencies {
     implementation 'org.mapstruct:mapstruct:1.5.5.Final'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
 
-    // Swagger OpenAPI (funcional e compatível)
+    // Swagger/OpenAPI
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
 
-    // DevTools
+    // Devtools (somente desenvolvimento)
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
-    // Testes básicos
+    // Testes
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
-
+    // Testcontainers
+    testImplementation 'org.testcontainers:testcontainers:1.19.7'
+    testImplementation 'org.testcontainers:junit-jupiter:1.19.7'
+    testImplementation 'org.testcontainers:postgresql:1.19.7'
 }
 
-tasks.named('test') {
+// Testes padrão
+test {
     useJUnitPlatform()
+    systemProperty "spring.profiles.active", "test"
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        showStackTraces true
+    }
 }
 
+// Testes com containers (caso queira rodar separadamente)
+tasks.register('testWithContainers', Test) {
+    useJUnitPlatform()
+    systemProperty "spring.profiles.active", "test"
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+}
+
+// Formatador de código com Spotless
 spotless {
     java {
         googleJavaFormat()

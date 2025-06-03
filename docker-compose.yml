@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: estoque-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: controle-estoque
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: post
+      POSTGRES_INITDB_ARGS: --encoding=UTF-8
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d controle-estoque"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: estoque-app
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      POSTGRES_HOST: db         # Esse deve bater com o host na URL do datasource
+      POSTGRES_USER: postgres   # Igual ao que usa no banco
+      POSTGRES_PASSWORD: post
+      JAVA_OPTS: "-Xmx512m -XX:MaxRAMPercentage=75.0 -Dfile.encoding=UTF-8"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  postgres-data:
+    driver: local
