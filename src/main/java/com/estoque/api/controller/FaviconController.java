@@ -11,4 +11,5 @@ public class FaviconController {
   @GetMapping("favicon.ico")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void returnNoFavicon() {}
+  //Ajustando
 }
