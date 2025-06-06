@@ -1,16 +1,16 @@
 package com.estoque.api.service.impl;
 
 import com.estoque.api.domain.Produto;
-import com.estoque.api.exception.produto.AtualizacaoInvalidaException;
+import com.estoque.api.exception.generico.NenhumCampoModificadoException;
 import com.estoque.api.exception.produto.ProdutoNaoEncontradoException;
 import com.estoque.api.repository.ProdutoRepository;
 import com.estoque.api.repository.specs.ProdutoSpecs;
 import com.estoque.api.service.ProdutoService;
 import com.estoque.api.shared.DTO.ProdutoFiltroDTO;
 import com.estoque.api.shared.DTO.request.AtualizarProdutoRequest;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
@@ -23,54 +23,40 @@ public class ProdutoServiceImpl implements ProdutoService {
 
   @Override
   public Produto cadastrar(Produto produto) {
-    produto.setDataHoraCadastro(LocalDateTime.now());
-    produto.setAtivo(true);
-    return repository.save(produto);
+    Produto produtoParaSalvar =
+        produto.toBuilder().dataHoraCadastro(LocalDateTime.now()).ativo(true).build();
+
+    return repository.save(produtoParaSalvar);
   }
 
   @Override
   public Produto atualizar(UUID id, AtualizarProdutoRequest request) {
-    Produto produto =
-        repository.findById(id).orElseThrow(() -> new ProdutoNaoEncontradoException(id));
+    Produto produto = pesquisarPorId(id);
+    validarAtualizacao(request, produto);
 
-    boolean houveAtualizacao = atualizarCamposSeDiferente(produto, request);
-
-    if (!houveAtualizacao) {
-      throw new AtualizacaoInvalidaException("Nenhum campo foi alterado");
-    }
-
-    produto.setDataHoraAlteracao(LocalDateTime.now());
-    return repository.save(produto);
+    Produto produtoAtualizado = atualizarProduto(produto, request);
+    return repository.save(produtoAtualizado);
   }
 
-  private boolean atualizarCamposSeDiferente(Produto produto, AtualizarProdutoRequest request) {
-    boolean mudou = false;
-
-    if (campoDiferente(produto.getDescricao(), request.getDescricao())) {
-      produto.setDescricao(request.getDescricao());
-      mudou = true;
-    }
-
-    if (campoDiferente(produto.getPreco(), request.getPreco())) {
-      produto.setPreco(request.getPreco());
-      mudou = true;
-    }
-
-    if (campoDiferente(produto.getAtivo(), request.getAtivo())) {
-      produto.setAtivo(request.getAtivo());
-      mudou = true;
-    }
-
-    return mudou;
+  private Produto atualizarProduto(Produto produto, AtualizarProdutoRequest request) {
+    return produto.toBuilder()
+        .descricao(request.getDescricao())
+        .preco(request.getPreco())
+        .ativo(request.getAtivo())
+        .dataHoraAlteracao(LocalDateTime.now())
+        .build();
   }
 
-  private <T> boolean campoDiferente(T atual, T novoValor) {
-    if (atual == null && novoValor == null) return false;
-    if (atual == null || novoValor == null) return true;
-    if (atual instanceof BigDecimal && novoValor instanceof BigDecimal) {
-      return ((BigDecimal) atual).compareTo((BigDecimal) novoValor) != 0;
+  private void validarAtualizacao(AtualizarProdutoRequest request, Produto produto) {
+    if (!isProdutoModificado(produto, request)) {
+      throw new NenhumCampoModificadoException("Nenhum campo foi alterado");
     }
-    return !atual.equals(novoValor);
+  }
+
+  private boolean isProdutoModificado(Produto produto, AtualizarProdutoRequest request) {
+    return !Objects.equals(produto.getDescricao(), request.getDescricao())
+        || !Objects.equals(produto.getPreco(), request.getPreco())
+        || !Objects.equals(produto.getAtivo(), request.getAtivo());
   }
 
   @Override
@@ -78,13 +64,11 @@ public class ProdutoServiceImpl implements ProdutoService {
     return repository.findAll();
   }
 
-  public Produto remover(UUID id) {
-    Produto produto =
-        repository.findById(id).orElseThrow(() -> new ProdutoNaoEncontradoException(id));
+  public Produto marcarComoRemovido(UUID id) {
+    Produto produto = pesquisarPorId(id);
+    Produto produtoRemovido = produto.toBuilder().dataHoraRemocao(LocalDateTime.now()).build();
 
-    produto.setDataHoraRemocao(LocalDateTime.now());
-
-    return repository.save(produto);
+    return repository.save(produtoRemovido);
   }
 
   public List<Produto> pesquisar(ProdutoFiltroDTO filtro) {

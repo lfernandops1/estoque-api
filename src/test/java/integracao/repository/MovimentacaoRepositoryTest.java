@@ -30,7 +30,7 @@ public class MovimentacaoRepositoryTest extends BaseTest {
 
   @BeforeEach
   void setUp() {
-    movimentacaoRepository.deleteAllInBatch(); // Mais rápido que deleteAll()
+    movimentacaoRepository.deleteAllInBatch();
     produtoRepository.deleteAllInBatch();
   }
 

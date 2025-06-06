@@ -40,7 +40,7 @@ public class ProdutoController {
 
   @DeleteMapping("/{id}")
   public ResponseEntity<Produto> excluirAtividade(@PathVariable UUID id) {
-    Produto produtoRemovido = service.remover(id);
+    Produto produtoRemovido = service.marcarComoRemovido(id);
     return ResponseEntity.ok(produtoRemovido);
   }
 

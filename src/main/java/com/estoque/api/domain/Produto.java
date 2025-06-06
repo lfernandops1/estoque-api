@@ -15,7 +15,7 @@ import org.hibernate.annotations.GenericGenerator;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 @Entity
 @Table(name = "produtos")
 public class Produto {

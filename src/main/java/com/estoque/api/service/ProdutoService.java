@@ -13,7 +13,7 @@ public interface ProdutoService {
 
   List<Produto> listar();
 
-  Produto remover(UUID id);
+  Produto marcarComoRemovido(UUID id);
 
   Produto pesquisarPorId(UUID id);
 

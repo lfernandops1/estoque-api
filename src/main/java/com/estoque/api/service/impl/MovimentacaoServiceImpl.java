@@ -2,7 +2,6 @@ package com.estoque.api.service.impl;
 
 import com.estoque.api.domain.MovimentacaoEstoque;
 import com.estoque.api.domain.Produto;
-import com.estoque.api.exception.generico.ValidacaoException;
 import com.estoque.api.exception.movimentacao.MovimentacaoInvalidaException;
 import com.estoque.api.exception.movimentacao.MovimentacaoNaoEncontradaException;
 import com.estoque.api.exception.produto.ProdutoNaoEncontradoException;
@@ -15,59 +14,80 @@ import com.estoque.api.shared.DTO.request.CriarMovimentacaoRequest;
 import com.estoque.api.shared.DTO.response.CriarMovimentacaoResponse;
 import com.estoque.api.shared.enums.TipoMovimentacao;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MovimentacaoServiceImpl implements MovimentacaoService {
 
-  @Autowired private MovimentacaoRepository movimentacaoRepository;
+  private final MovimentacaoRepository movimentacaoRepository;
 
-  @Autowired private ProdutoRepository produtoRepository;
+  private final ProdutoRepository produtoRepository;
 
-  @Autowired private MovimentacaoMapper movimentacaoMapper;
+  private final MovimentacaoMapper movimentacaoMapper;
+
+  public MovimentacaoServiceImpl(
+      MovimentacaoRepository movimentacaoRepository,
+      ProdutoRepository produtoRepository,
+      MovimentacaoMapper movimentacaoMapper,
+      ProdutoServiceImpl produtoServiceImpl) {
+    this.movimentacaoRepository = movimentacaoRepository;
+    this.produtoRepository = produtoRepository;
+    this.movimentacaoMapper = movimentacaoMapper;
+  }
 
   @Override
   @Transactional
-  public CriarMovimentacaoResponse criar(CriarMovimentacaoRequest criarMovimentacaoRequest) {
+  public CriarMovimentacaoResponse criar(CriarMovimentacaoRequest request) {
+    validarDadosMovimentacao(request);
+
     Produto produto =
         produtoRepository
-            .findById(criarMovimentacaoRequest.getProdutoId())
-            .orElseThrow(
-                () -> new ProdutoNaoEncontradoException(criarMovimentacaoRequest.getProdutoId()));
+            .findById(request.getProdutoId())
+            .orElseThrow(() -> new ProdutoNaoEncontradoException(request.getProdutoId()));
 
-    Integer quantidade = criarMovimentacaoRequest.getQuantidade();
-    if (quantidade == null || quantidade <= 0) {
-      throw new ValidacaoException("Quantidade deve ser maior que zero");
+    atualizarEstoqueProduto(request, produto);
+    MovimentacaoEstoque movimentacaoSalva = criarMovimentacao(request, produto);
+
+    return movimentacaoMapper.toResponse(movimentacaoSalva);
+  }
+
+  private void validarDadosMovimentacao(CriarMovimentacaoRequest request) {
+    if (request.getQuantidade() == null || request.getQuantidade() <= 0) {
+      throw new QuantidadeInsuficienteException(request.getQuantidade(), request.getProdutoId());
+    }
+    if (request.getTipo() == null
+        || !EnumSet.allOf(TipoMovimentacao.class).contains(request.getTipo())) {
+      throw new MovimentacaoInvalidaException();
+    }
+  }
+
+  private void atualizarEstoqueProduto(CriarMovimentacaoRequest request, Produto produto) {
+    if (request.getTipo() == TipoMovimentacao.SAIDA
+        && produto.getQuantidade() < request.getQuantidade()) {
+      throw new QuantidadeInsuficienteException(produto.getQuantidade(), produto.getId());
     }
 
-    TipoMovimentacao tipo = criarMovimentacaoRequest.getTipo();
-    if (tipo == null || !(tipo == TipoMovimentacao.SAIDA || tipo == TipoMovimentacao.ENTRADA)) {
-      throw new MovimentacaoInvalidaException("Tipo de movimentação inválido");
-    }
+    int novaQuantidade =
+        request.getTipo() == TipoMovimentacao.ENTRADA
+            ? produto.getQuantidade() + request.getQuantidade()
+            : produto.getQuantidade() - request.getQuantidade();
 
-    if (tipo == TipoMovimentacao.SAIDA) {
-      if (produto.getQuantidade() < quantidade) {
-        throw new QuantidadeInsuficienteException(produto.getId());
-      }
-      produto.setQuantidade(produto.getQuantidade() - quantidade);
-    } else {
-      produto.setQuantidade(produto.getQuantidade() + quantidade);
-    }
-
+    produto.setQuantidade(novaQuantidade);
     produtoRepository.save(produto);
+  }
 
+  private MovimentacaoEstoque criarMovimentacao(CriarMovimentacaoRequest request, Produto produto) {
     MovimentacaoEstoque movimentacao = new MovimentacaoEstoque();
     movimentacao.setProduto(produto);
-    movimentacao.setTipo(tipo);
-    movimentacao.setQuantidade(quantidade);
+    movimentacao.setTipo(request.getTipo());
+    movimentacao.setQuantidade(request.getQuantidade());
     movimentacao.setDataMovimentacao(LocalDateTime.now());
 
-    MovimentacaoEstoque salvo = movimentacaoRepository.save(movimentacao);
-    return movimentacaoMapper.toResponse(salvo);
+    return movimentacaoRepository.save(movimentacao);
   }
 
   @Override

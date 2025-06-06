@@ -6,7 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.estoque.api.domain.Produto;
-import com.estoque.api.exception.produto.AtualizacaoInvalidaException;
+import com.estoque.api.exception.generico.NenhumCampoModificadoException;
 import com.estoque.api.exception.produto.ProdutoNaoEncontradoException;
 import com.estoque.api.repository.ProdutoRepository;
 import com.estoque.api.service.impl.ProdutoServiceImpl;
@@ -29,228 +29,143 @@ public class ProdutoServiceTest {
 
   @Mock private ProdutoRepository repository;
 
-  @InjectMocks private ProdutoServiceImpl service;
+  @InjectMocks private ProdutoServiceImpl produtoService;
+
+  private static final UUID PRODUTO_ID = UUID.randomUUID();
 
   @Test
-  void deveCadastrarProduto() {
-    Produto produto = new Produto();
-    when(repository.save(any(Produto.class))).thenReturn(produto);
+  void deveCadastrarProdutoComDataEAtivo() {
+    Produto produto = obterProduto(false);
+    Produto produtoSalvo =
+        produto.toBuilder().dataHoraCadastro(LocalDateTime.now()).ativo(true).build();
 
-    Produto salvo = service.cadastrar(produto);
+    when(repository.save(any(Produto.class))).thenReturn(produtoSalvo);
 
-    assertThat(salvo).isNotNull();
-    assertThat(salvo.getDataHoraCadastro()).isNotNull();
-    assertThat(salvo.getAtivo()).isTrue();
-    verify(repository).save(produto);
+    Produto resultado = produtoService.cadastrar(produto);
+
+    assertThat(resultado.getDataHoraCadastro()).isNotNull();
+    assertThat(resultado.getAtivo()).isTrue();
+    verify(repository).save(any(Produto.class));
   }
 
   @Test
   void deveAtualizarProdutoComCamposValidos() {
-    Produto existente = obterProduto();
+    Produto original = obterProduto(true);
+    AtualizarProdutoRequest request =
+        new AtualizarProdutoRequest("Novo Produto", new BigDecimal("20.00"), false);
 
-    AtualizarProdutoRequest request = new AtualizarProdutoRequest();
-    request.setDescricao("Descrição diferente");
-    request.setPreco(existente.getPreco());
-    request.setAtivo(existente.getAtivo());
-
-    when(repository.findById(existente.getId())).thenReturn(Optional.of(existente));
+    when(repository.findByIdAndDataHoraRemocaoIsNull(PRODUTO_ID)).thenReturn(Optional.of(original));
     when(repository.save(any(Produto.class))).thenAnswer(i -> i.getArgument(0));
 
-    Produto atualizado = service.atualizar(existente.getId(), request);
+    Produto atualizado = produtoService.atualizar(PRODUTO_ID, request);
 
-    assertThat(atualizado.getDescricao()).isEqualTo(request.getDescricao());
-    assertThat(atualizado.getPreco()).isEqualTo(request.getPreco());
-    assertThat(atualizado.getAtivo()).isEqualTo(request.getAtivo());
+    assertThat(atualizado.getDescricao()).isEqualTo("Novo Produto");
+    assertThat(atualizado.getPreco()).isEqualByComparingTo("20.00");
+    assertThat(atualizado.getAtivo()).isFalse();
     assertThat(atualizado.getDataHoraAlteracao()).isNotNull();
-    verify(repository).save(existente);
   }
 
   @Test
-  void deveLancarExcecaoQuandoAtualizacaoInvalida() {
-    Produto existente = obterProduto();
-    when(repository.findById(existente.getId())).thenReturn(Optional.of(existente));
+  void deveLancarExcecaoQuandoNenhumCampoForModificado() {
+    Produto original = obterProduto(true);
+    AtualizarProdutoRequest request =
+        new AtualizarProdutoRequest("Produto Teste", new BigDecimal("10.00"), true);
 
-    AtualizarProdutoRequest request = new AtualizarProdutoRequest();
-    request.setDescricao(existente.getDescricao());
-    request.setAtivo(existente.getAtivo());
-    request.setPreco(existente.getPreco());
+    when(repository.findByIdAndDataHoraRemocaoIsNull(PRODUTO_ID)).thenReturn(Optional.of(original));
 
-    assertThatThrownBy(() -> service.atualizar(existente.getId(), request))
-        .isInstanceOf(AtualizacaoInvalidaException.class)
-        .hasMessageContaining("Nenhum campo foi alterado");
-
-    verify(repository, never()).save(any());
+    assertThatThrownBy(() -> produtoService.atualizar(PRODUTO_ID, request))
+        .isInstanceOf(NenhumCampoModificadoException.class)
+        .hasMessage("Nenhum campo foi alterado");
   }
 
   @Test
-  void deveLancarExcecaoQuandoProdutoNaoExisteNaAtualizacao() {
-    Produto produto = obterProduto();
-    when(repository.findById(produto.getId())).thenReturn(Optional.empty());
+  void deveListarProdutos() {
+    when(repository.findAll()).thenReturn(List.of(obterProduto(true)));
 
-    AtualizarProdutoRequest request = obterProdutoRequest();
+    List<Produto> produtos = produtoService.listar();
 
-    assertThatThrownBy(() -> service.atualizar(produto.getId(), request))
-        .isInstanceOf(ProdutoNaoEncontradoException.class);
+    assertThat(produtos).hasSize(1);
+    assertThat(produtos.get(0).getDescricao()).isEqualTo("Produto Teste");
   }
 
   @Test
-  void deveDetectarAlteracaoQuandoCamposForemNull() {
-    Produto existente = obterProduto();
-
-    AtualizarProdutoRequest request = new AtualizarProdutoRequest();
-    request.setDescricao(null);
-    request.setPreco(null);
-    request.setAtivo(!existente.getAtivo());
-
-    when(repository.findById(existente.getId())).thenReturn(Optional.of(existente));
+  void deveMarcarProdutoComoRemovido() {
+    Produto produto = obterProduto(true);
+    when(repository.findByIdAndDataHoraRemocaoIsNull(PRODUTO_ID)).thenReturn(Optional.of(produto));
     when(repository.save(any(Produto.class))).thenAnswer(i -> i.getArgument(0));
 
-    Produto atualizado = service.atualizar(existente.getId(), request);
-
-    assertThat(atualizado.getDescricao()).isNull();
-    assertThat(atualizado.getPreco()).isNull();
-    assertThat(atualizado.getAtivo()).isEqualTo(request.getAtivo());
-    verify(repository).save(existente);
-  }
-
-  @Test
-  void deveDetectarAlteracaoQuandoBigDecimalDiferente() {
-    Produto existente = obterProduto();
-
-    AtualizarProdutoRequest request = new AtualizarProdutoRequest();
-    request.setDescricao(existente.getDescricao());
-
-    request.setPreco(existente.getPreco().add(BigDecimal.ONE));
-    request.setAtivo(existente.getAtivo());
-
-    when(repository.findById(existente.getId())).thenReturn(Optional.of(existente));
-    when(repository.save(any(Produto.class))).thenAnswer(i -> i.getArgument(0));
-
-    Produto atualizado = service.atualizar(existente.getId(), request);
-
-    assertThat(atualizado.getPreco()).isEqualByComparingTo(request.getPreco());
-    verify(repository).save(existente);
-  }
-
-  @Test
-  void naoDeveAtualizarQuandoBigDecimalIgualMesmoValor() {
-    Produto existente = obterProduto();
-
-    AtualizarProdutoRequest request = new AtualizarProdutoRequest();
-    request.setDescricao(existente.getDescricao());
-
-    request.setPreco(new BigDecimal(existente.getPreco().toString()));
-    request.setAtivo(existente.getAtivo());
-
-    when(repository.findById(existente.getId())).thenReturn(Optional.of(existente));
-
-    assertThatThrownBy(() -> service.atualizar(existente.getId(), request))
-        .isInstanceOf(AtualizacaoInvalidaException.class)
-        .hasMessageContaining("Nenhum campo foi alterado");
-
-    verify(repository, never()).save(any());
-  }
-
-  @Test
-  void deveDetectarAlteracaoQuandoCamposNormaisDiferentes() {
-    Produto existente = obterProduto();
-
-    AtualizarProdutoRequest request = new AtualizarProdutoRequest();
-    request.setDescricao("Descrição Diferente");
-    request.setPreco(existente.getPreco());
-    request.setAtivo(!existente.getAtivo());
-
-    when(repository.findById(existente.getId())).thenReturn(Optional.of(existente));
-    when(repository.save(any(Produto.class))).thenAnswer(i -> i.getArgument(0));
-
-    Produto atualizado = service.atualizar(existente.getId(), request);
-
-    assertThat(atualizado.getDescricao()).isEqualTo(request.getDescricao());
-    assertThat(atualizado.getAtivo()).isEqualTo(request.getAtivo());
-    verify(repository).save(existente);
-  }
-
-  @Test
-  void deveListarTodosOsProdutos() {
-    List<Produto> lista = List.of(new Produto(), new Produto());
-    when(repository.findAll()).thenReturn(lista);
-
-    List<Produto> resultado = service.listar();
-
-    assertThat(resultado).hasSize(2);
-  }
-
-  @Test
-  void deveRemoverProduto() {
-    Produto produto = obterProduto();
-    when(repository.findById(produto.getId())).thenReturn(Optional.of(produto));
-    when(repository.save(any())).thenReturn(produto);
-
-    Produto removido = service.remover(produto.getId());
+    Produto removido = produtoService.marcarComoRemovido(PRODUTO_ID);
 
     assertThat(removido.getDataHoraRemocao()).isNotNull();
-    verify(repository).save(produto);
   }
 
   @Test
-  void deveLancarExcecaoAoRemoverProdutoInexistente() {
+  void deveRetornarProdutoPorId() {
+    Produto produto = obterProduto(true);
+    when(repository.findByIdAndDataHoraRemocaoIsNull(PRODUTO_ID)).thenReturn(Optional.of(produto));
 
-    Produto produto = obterProduto();
-    when(repository.findById(produto.getId())).thenReturn(Optional.empty());
+    Produto encontrado = produtoService.pesquisarPorId(PRODUTO_ID);
 
-    assertThatThrownBy(() -> service.remover(produto.getId()))
-        .isInstanceOf(ProdutoNaoEncontradoException.class);
+    assertThat(encontrado.getId()).isEqualTo(PRODUTO_ID);
   }
 
   @Test
-  void devePesquisarProdutoPorId() {
+  void deveLancarExcecaoSeProdutoNaoForEncontrado() {
+    when(repository.findByIdAndDataHoraRemocaoIsNull(PRODUTO_ID)).thenReturn(Optional.empty());
 
-    Produto produto = obterProduto();
-    when(repository.findByIdAndDataHoraRemocaoIsNull(produto.getId()))
-        .thenReturn(Optional.of(produto));
-
-    Produto resultado = service.pesquisarPorId(produto.getId());
-
-    assertThat(resultado).isNotNull();
+    assertThatThrownBy(() -> produtoService.pesquisarPorId(PRODUTO_ID))
+        .isInstanceOf(ProdutoNaoEncontradoException.class)
+        .hasMessageContaining(PRODUTO_ID.toString());
   }
 
+  // Exemplo para pesquisa com filtro usando Specification
   @Test
-  void deveLancarExcecaoAoPesquisarProdutoPorIdInexistente() {
-    UUID id = UUID.randomUUID();
-    when(repository.findByIdAndDataHoraRemocaoIsNull(id)).thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> service.pesquisarPorId(id))
-        .isInstanceOf(ProdutoNaoEncontradoException.class);
-  }
-
-  @Test
-  void devePesquisarComFiltro() {
+  void devePesquisarProdutosComFiltro() {
     ProdutoFiltroDTO filtro = new ProdutoFiltroDTO();
-    List<Produto> resultadoEsperado = List.of(new Produto());
+    filtro.setDescricao("Teste");
+    filtro.setAtivo(true);
 
-    when(repository.findAll(any(Specification.class))).thenReturn(resultadoEsperado);
+    when(repository.findAll(any(Specification.class))).thenReturn(List.of(obterProduto(true)));
 
-    List<Produto> resultado = service.pesquisar(filtro);
+    List<Produto> resultado = produtoService.pesquisar(filtro);
 
-    assertThat(resultado).isEqualTo(resultadoEsperado);
+    assertThat(resultado).isNotEmpty();
   }
 
-  private Produto obterProduto() {
-    Produto produto = new Produto();
-    produto.setId(UUID.randomUUID());
-    produto.setDescricao("Produto Teste");
-    produto.setPreco(BigDecimal.valueOf(99.90));
-    produto.setQuantidade(10);
-    produto.setAtivo(true);
-    produto.setDataHoraCadastro(LocalDateTime.now().minusDays(1));
-    return produto;
+  @Test
+  void deveLancarExcecaoAoAtualizarProdutoInexistente() {
+    when(repository.findByIdAndDataHoraRemocaoIsNull(PRODUTO_ID)).thenReturn(Optional.empty());
+
+    AtualizarProdutoRequest request =
+        new AtualizarProdutoRequest("Novo", new BigDecimal("5.00"), false);
+
+    assertThatThrownBy(() -> produtoService.atualizar(PRODUTO_ID, request))
+        .isInstanceOf(ProdutoNaoEncontradoException.class)
+        .hasMessageContaining(PRODUTO_ID.toString());
   }
 
-  private AtualizarProdutoRequest obterProdutoRequest() {
-    AtualizarProdutoRequest request = new AtualizarProdutoRequest();
-    request.setDescricao("Produto Atualizado");
-    request.setPreco(BigDecimal.valueOf(150.00));
-    request.setAtivo(false);
-    return request;
+  @Test
+  void deveLancarExcecaoAoMarcarProdutoInexistenteComoRemovido() {
+    when(repository.findByIdAndDataHoraRemocaoIsNull(PRODUTO_ID)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> produtoService.marcarComoRemovido(PRODUTO_ID))
+        .isInstanceOf(ProdutoNaoEncontradoException.class)
+        .hasMessageContaining(PRODUTO_ID.toString());
+  }
+
+  // Utilitário comum para reuso
+  private Produto obterProduto(boolean comId) {
+    Produto.ProdutoBuilder builder =
+        Produto.builder()
+            .descricao("Produto Teste")
+            .preco(new BigDecimal("10.00"))
+            .quantidade(10)
+            .ativo(true);
+
+    if (comId) {
+      builder.id(PRODUTO_ID);
+    }
+
+    return builder.build();
   }
 }

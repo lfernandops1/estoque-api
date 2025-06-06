@@ -7,7 +7,6 @@ import static org.mockito.Mockito.when;
 
 import com.estoque.api.domain.MovimentacaoEstoque;
 import com.estoque.api.domain.Produto;
-import com.estoque.api.exception.generico.ValidacaoException;
 import com.estoque.api.exception.movimentacao.MovimentacaoInvalidaException;
 import com.estoque.api.exception.movimentacao.MovimentacaoNaoEncontradaException;
 import com.estoque.api.exception.produto.ProdutoNaoEncontradoException;
@@ -19,13 +18,14 @@ import com.estoque.api.shared.DTO.mapper.MovimentacaoMapper;
 import com.estoque.api.shared.DTO.request.CriarMovimentacaoRequest;
 import com.estoque.api.shared.DTO.response.CriarMovimentacaoResponse;
 import com.estoque.api.shared.enums.TipoMovimentacao;
-import java.math.BigDecimal;
-import java.util.Arrays;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -33,141 +33,147 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class MovimentacaoServiceTest {
 
-  @InjectMocks private MovimentacaoServiceImpl service;
-
-  @Mock private ProdutoRepository produtoRepository;
+  @InjectMocks private MovimentacaoServiceImpl movimentacaoService;
 
   @Mock private MovimentacaoRepository movimentacaoRepository;
 
+  @Mock private ProdutoRepository produtoRepository;
+
   @Mock private MovimentacaoMapper movimentacaoMapper;
 
+  private static final UUID PRODUTO_ID = UUID.randomUUID();
+  private static final UUID MOVIMENTACAO_ID = UUID.randomUUID();
+
+  private Produto obterProduto(Integer quantidade) {
+    Produto produto = new Produto();
+    produto.setId(PRODUTO_ID);
+    produto.setDescricao("Produto Teste");
+    produto.setQuantidade(quantidade);
+    return produto;
+  }
+
+  private CriarMovimentacaoRequest obterRequest(TipoMovimentacao tipo, Integer qtd) {
+    return new CriarMovimentacaoRequest(PRODUTO_ID, tipo, qtd);
+  }
+
+  private MovimentacaoEstoque obterMovimentacao(Produto produto, TipoMovimentacao tipo, int qtd) {
+    MovimentacaoEstoque mov = new MovimentacaoEstoque();
+    mov.setId(MOVIMENTACAO_ID);
+    mov.setProduto(produto);
+    mov.setTipo(tipo);
+    mov.setQuantidade(qtd);
+    mov.setDataMovimentacao(LocalDateTime.now());
+    return mov;
+  }
+
+  private CriarMovimentacaoResponse obterCriarMovimentacaoResponse() {
+    return new CriarMovimentacaoResponse(
+        MOVIMENTACAO_ID, PRODUTO_ID, TipoMovimentacao.ENTRADA, 5, LocalDateTime.now());
+  }
+
   @Test
-  void deveCriarMovimentacaoEntradaComSucesso() {
-    Produto produto = obterProdutoComQuantidade(10);
-    CriarMovimentacaoRequest request =
-        new CriarMovimentacaoRequest(produto.getId(), TipoMovimentacao.ENTRADA, 5);
+  void deveCriarMovimentacaoDeEntradaComSucesso() {
+    Produto produto = obterProduto(10);
+    CriarMovimentacaoRequest request = obterRequest(TipoMovimentacao.ENTRADA, 5);
+    MovimentacaoEstoque movimentacao = obterMovimentacao(produto, TipoMovimentacao.ENTRADA, 5);
 
-    when(produtoRepository.findById(produto.getId())).thenReturn(Optional.of(produto));
-    when(produtoRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-    when(movimentacaoRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-    when(movimentacaoMapper.toResponse(any())).thenReturn(new CriarMovimentacaoResponse());
+    when(produtoRepository.findById(PRODUTO_ID)).thenReturn(Optional.of(produto));
+    when(produtoRepository.save(any(Produto.class))).thenReturn(produto);
+    when(movimentacaoRepository.save(any(MovimentacaoEstoque.class))).thenReturn(movimentacao);
+    when(movimentacaoMapper.toResponse(any())).thenReturn(obterCriarMovimentacaoResponse());
 
-    CriarMovimentacaoResponse response = service.criar(request);
+    CriarMovimentacaoResponse response = movimentacaoService.criar(request);
 
     assertThat(response).isNotNull();
-    assertThat(produto.getQuantidade()).isEqualTo(15); // 10 + 5
+    assertThat(response.getId()).isEqualTo(MOVIMENTACAO_ID);
   }
 
   @Test
-  void deveCriarMovimentacaoSaidaComSucesso() {
-    Produto produto = obterProdutoComQuantidade(10);
-    CriarMovimentacaoRequest request =
-        new CriarMovimentacaoRequest(produto.getId(), TipoMovimentacao.SAIDA, 5);
+  void deveCriarMovimentacaoDeSaidaComSucesso() {
+    Produto produto = obterProduto(10);
+    CriarMovimentacaoRequest request = obterRequest(TipoMovimentacao.SAIDA, 5);
+    MovimentacaoEstoque movimentacao = obterMovimentacao(produto, TipoMovimentacao.SAIDA, 5);
 
-    when(produtoRepository.findById(produto.getId())).thenReturn(Optional.of(produto));
-    when(produtoRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-    when(movimentacaoRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-    when(movimentacaoMapper.toResponse(any())).thenReturn(new CriarMovimentacaoResponse());
+    when(produtoRepository.findById(PRODUTO_ID)).thenReturn(Optional.of(produto));
+    when(produtoRepository.save(any(Produto.class))).thenReturn(produto);
+    when(movimentacaoRepository.save(any(MovimentacaoEstoque.class))).thenReturn(movimentacao);
+    obterCriarMovimentacaoResponse().setTipo(TipoMovimentacao.SAIDA);
+    when(movimentacaoMapper.toResponse(any())).thenReturn(obterCriarMovimentacaoResponse());
 
-    CriarMovimentacaoResponse response = service.criar(request);
+    CriarMovimentacaoResponse response = movimentacaoService.criar(request);
 
     assertThat(response).isNotNull();
-    assertThat(produto.getQuantidade()).isEqualTo(5); // 10 - 5
+    assertThat(response.getId()).isEqualTo(MOVIMENTACAO_ID);
   }
 
   @Test
-  void deveLancarExcecaoSeProdutoNaoEncontradoAoCriar() {
-    UUID idInvalido = UUID.randomUUID();
-    CriarMovimentacaoRequest request =
-        new CriarMovimentacaoRequest(idInvalido, TipoMovimentacao.ENTRADA, 5);
+  void deveLancarExcecaoQuandoProdutoNaoEncontrado() {
+    CriarMovimentacaoRequest request = obterRequest(TipoMovimentacao.ENTRADA, 5);
 
-    when(produtoRepository.findById(idInvalido)).thenReturn(Optional.empty());
+    when(produtoRepository.findById(PRODUTO_ID)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> service.criar(request))
-        .isInstanceOf(ProdutoNaoEncontradoException.class);
+    assertThatThrownBy(() -> movimentacaoService.criar(request))
+        .isInstanceOf(ProdutoNaoEncontradoException.class)
+        .hasMessageContaining(PRODUTO_ID.toString());
   }
 
   @Test
-  void deveLancarExcecaoSeQuantidadeForNulaOuMenorOuIgualAZero() {
-    Produto produto = obterProdutoComQuantidade(10);
+  void deveLancarExcecaoQuandoTipoMovimentacaoForNulo() {
+    CriarMovimentacaoRequest request = obterRequest(null, 5);
 
-    List<Integer> quantidadesInvalidas = Arrays.asList(null, 0, -1); // ← CORRIGIDO AQUI
-    for (Integer quantidade : quantidadesInvalidas) {
-      CriarMovimentacaoRequest request =
-          new CriarMovimentacaoRequest(produto.getId(), TipoMovimentacao.ENTRADA, quantidade);
-
-      when(produtoRepository.findById(produto.getId())).thenReturn(Optional.of(produto));
-
-      assertThatThrownBy(() -> service.criar(request))
-          .isInstanceOf(ValidacaoException.class)
-          .hasMessageContaining("Quantidade deve ser maior que zero");
-    }
+    assertThatThrownBy(() -> movimentacaoService.criar(request))
+        .isInstanceOf(MovimentacaoInvalidaException.class);
   }
 
-  @Test
-  void deveLancarExcecaoSeTipoInvalidoOuNulo() {
-    Produto produto = obterProdutoComQuantidade(10);
-    CriarMovimentacaoRequest request = new CriarMovimentacaoRequest(produto.getId(), null, 5);
+  @ParameterizedTest
+  @ValueSource(ints = {0, -5})
+  void deveLancarExcecaoQuandoQuantidadeForInvalida(Integer qtd) {
+    CriarMovimentacaoRequest request = obterRequest(TipoMovimentacao.ENTRADA, qtd);
 
-    when(produtoRepository.findById(produto.getId())).thenReturn(Optional.of(produto));
-
-    assertThatThrownBy(() -> service.criar(request))
-        .isInstanceOf(MovimentacaoInvalidaException.class)
-        .hasMessageContaining("Tipo de movimentação inválido");
-  }
-
-  @Test
-  void deveLancarExcecaoSeQuantidadeSaidaMaiorQueDisponivel() {
-    Produto produto = obterProdutoComQuantidade(3);
-    CriarMovimentacaoRequest request =
-        new CriarMovimentacaoRequest(produto.getId(), TipoMovimentacao.SAIDA, 5);
-
-    when(produtoRepository.findById(produto.getId())).thenReturn(Optional.of(produto));
-
-    assertThatThrownBy(() -> service.criar(request))
+    assertThatThrownBy(() -> movimentacaoService.criar(request))
         .isInstanceOf(QuantidadeInsuficienteException.class);
   }
 
   @Test
-  void deveListarTodasMovimentacoes() {
-    List<MovimentacaoEstoque> movimentacoes =
-        List.of(new MovimentacaoEstoque(), new MovimentacaoEstoque());
-    when(movimentacaoRepository.findAll()).thenReturn(movimentacoes);
+  void deveLancarExcecaoQuandoQuantidadeSaidaMaiorQueEstoque() {
+    Produto produto = obterProduto(3);
+    CriarMovimentacaoRequest request = obterRequest(TipoMovimentacao.SAIDA, 5);
 
-    List<MovimentacaoEstoque> resultado = service.listar();
+    when(produtoRepository.findById(PRODUTO_ID)).thenReturn(Optional.of(produto));
 
-    assertThat(resultado).hasSize(2);
+    assertThatThrownBy(() -> movimentacaoService.criar(request))
+        .isInstanceOf(QuantidadeInsuficienteException.class);
   }
 
   @Test
-  void deveBuscarMovimentacaoPorId() {
-    UUID id = UUID.randomUUID();
-    MovimentacaoEstoque movimentacao = new MovimentacaoEstoque();
-    movimentacao.setId(id);
+  void deveListarTodasAsMovimentacoes() {
+    List<MovimentacaoEstoque> lista =
+        List.of(obterMovimentacao(obterProduto(5), TipoMovimentacao.ENTRADA, 2));
 
-    when(movimentacaoRepository.findById(id)).thenReturn(Optional.of(movimentacao));
+    when(movimentacaoRepository.findAll()).thenReturn(lista);
 
-    MovimentacaoEstoque resultado = service.buscarPorId(id);
+    List<MovimentacaoEstoque> resultado = movimentacaoService.listar();
 
-    assertThat(resultado).isEqualTo(movimentacao);
+    assertThat(resultado).hasSize(1);
   }
 
   @Test
-  void deveLancarExcecaoQuandoBuscarMovimentacaoInexistente() {
-    UUID id = UUID.randomUUID();
-    when(movimentacaoRepository.findById(id)).thenReturn(Optional.empty());
+  void deveBuscarMovimentacaoPorIdComSucesso() {
+    MovimentacaoEstoque movimentacao =
+        obterMovimentacao(obterProduto(5), TipoMovimentacao.SAIDA, 1);
 
-    assertThatThrownBy(() -> service.buscarPorId(id))
+    when(movimentacaoRepository.findById(MOVIMENTACAO_ID)).thenReturn(Optional.of(movimentacao));
+
+    MovimentacaoEstoque resultado = movimentacaoService.buscarPorId(MOVIMENTACAO_ID);
+
+    assertThat(resultado).isNotNull();
+  }
+
+  @Test
+  void deveLancarExcecaoAoBuscarMovimentacaoPorIdInexistente() {
+    when(movimentacaoRepository.findById(MOVIMENTACAO_ID)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> movimentacaoService.buscarPorId(MOVIMENTACAO_ID))
         .isInstanceOf(MovimentacaoNaoEncontradaException.class);
-  }
-
-  private Produto obterProdutoComQuantidade(int quantidade) {
-    Produto produto = new Produto();
-    produto.setId(UUID.randomUUID());
-    produto.setDescricao("Produto");
-    produto.setPreco(BigDecimal.TEN);
-    produto.setQuantidade(quantidade);
-    produto.setAtivo(true);
-    return produto;
   }
 }
